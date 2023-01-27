@@ -1,13 +1,12 @@
 <template>
-  <div id="wrapper">
-    Active component: {{  currentPlugin?.name }}<br>
-    Plugin info string: {{ currentPlugin?.description ?? 'None loaded' }}<br>
+  <div id="wrapper" ref="wrapper">
   </div>
 </template>
 
 <script setup lang="ts">
 import { watch, toRef, ref } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api';
 
 const props = defineProps({
   activeComponent: {
@@ -18,22 +17,24 @@ const props = defineProps({
 
 const currentPlugin = ref<PluginAPI|undefined>(undefined)
 
-const dataDir = ref('none')
+const wrapper = ref<HTMLDivElement>()
 
 interface PluginAPI {
-  name: string
-  description: string
-  author: string
+  dom: Element
 }
 
 watch(toRef(props, 'activeComponent'), () => {
-  loadComponent()
+  loadComponent().catch(err => console.error(err))
 })
 
-function loadComponent (): void {
-  console.log(convertFileSrc(props.activeComponent, 'asset'))
-  import(/* @vite-ignore */ convertFileSrc(props.activeComponent, 'asset')).then(mod => {
+async function loadComponent (): Promise<void> {
+  const pluginJs: string = await invoke('get_plugin_js', { pluginPath: props.activeComponent })
+  import(/* @vite-ignore */ convertFileSrc(pluginJs, 'asset')).then(mod => {
     currentPlugin.value = mod.default()
+    if (wrapper.value !== undefined && currentPlugin.value !== undefined) {
+      wrapper.value.innerHTML = ''
+      wrapper.value.appendChild(currentPlugin.value.dom)
+    }
   })
   .catch(err => console.error(err))
 }

@@ -7,13 +7,13 @@
       <nav>
         <a
           v-for="c in components"
-          :key="c.id"
+          :key="c.path"
           :class="{
-            active: activeComponent === c.id
+            active: activeComponent === c.path
           }"
-          @click="loadComponent(c.id)"
+          @click="loadComponent(c.path)"
         >
-          {{ c.label }}
+          {{ c.name }} ({{ c.version }})
         </a>
       </nav>
 
@@ -34,8 +34,11 @@ import { invoke } from '@tauri-apps/api'
 import ComponentWrapper from './components/ComponentWrapper.vue'
 
 interface PluginDescriptor {
-  id: string
-  label: string
+  path: string
+  name: string
+  description: string
+  version: string
+  author: string
 }
 
 const components = ref<PluginDescriptor[]>([])
@@ -43,16 +46,8 @@ const activeComponent = ref<string|undefined>(undefined)
 
 invoke('list_plugins')
   .then(availablePlugins => {
-    for (const plugin of availablePlugins as string[]) {
-      const pathComponents = plugin.split(/[\/\\]/g)
-      console.log(pathComponents)
-      const basename = pathComponents[pathComponents.length - 1]
-      const withoutExt = basename.substring(0, basename.lastIndexOf('.'))
-      components.value.push({
-        id: plugin,
-        label: withoutExt
-      })
-    }
+    console.log(availablePlugins)
+    components.value = availablePlugins as PluginDescriptor[]
   })
   .catch(err => console.error(err))
 

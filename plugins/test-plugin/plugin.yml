@@ -1,0 +1,4 @@
+name: Debug plugin
+description: This plugin resides in the repos plugins-dir
+version: "0.1"
+author: Hendrik Erz
